@@ -1,0 +1,6 @@
+to run xv6:
+
+open cmd
+- wsl
+- make
+- make qemu
