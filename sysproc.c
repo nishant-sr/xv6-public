@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "pstat.h"
 
 extern int readcount;
 
@@ -95,4 +96,10 @@ sys_uptime(void)
 int
 sys_getreadcount(void){
   return readcount;
+}
+
+// needs to get the info for all processes and update processes to hold that info
+int 
+sys_getprocinfo(struct pstat *processes){
+  return 0;
 }
