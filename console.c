@@ -191,7 +191,7 @@ struct {
 void
 consoleintr(int (*getc)(void))
 {
-  int c, doprocdump, domlfqdump = 0;
+  int c, doprocdump = 0;
 
   acquire(&cons.lock);
   while((c = getc()) >= 0){
@@ -199,10 +199,6 @@ consoleintr(int (*getc)(void))
     case C('P'):  // Process listing.
       // procdump() locks cons.lock indirectly; invoke later
       doprocdump = 1;
-      break;
-    
-    case C('L'):
-      domlfqdump = 1;
       break;
 
     case C('U'):  // Kill line.
@@ -234,10 +230,6 @@ consoleintr(int (*getc)(void))
   release(&cons.lock);
   if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
-  }
-
-  if(domlfqdump) {
-    mlfqdump();  // now call mlfqdump() wo. cons.lock held
   }
 }
 

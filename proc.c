@@ -117,6 +117,7 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
+  p->priority = 3;
 
   return p;
 }
@@ -343,6 +344,9 @@ scheduler(void)
     // how do we ensure we stay on the highest level til there aren't any; which means coming back to 3 even at the end sometimes
     // how to maintain round-robin at highest priority level?
     for(int level = 3; level >= 0; level--){
+      // level is empty until proven otherwise
+      int emptylevel = 1;
+
       for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
         int currlevel = p->priority;
         if(p->state != RUNNABLE)
@@ -354,11 +358,13 @@ scheduler(void)
         // Switch to chosen process.  It is the process's job
         // to release ptable.lock and then reacquire it
         // before jumping back to us.
+        emptylevel = 0;
+
         c->proc = p;
         switchuvm(p);
 
         p->state = RUNNING;
-        cprintf("process: %d level: %d\n", p->pid, p->priority);
+        cprintf("ID: %d | Process: %s | Level: %d | Rounds: %d\n", p->pid, p->name, p->priority, p->rounds[currlevel]);
         
         swtch(&(c->scheduler), p->context);
         switchkvm();
@@ -375,6 +381,7 @@ scheduler(void)
 
         // if it's used up all 8 rounds for a given round
         if(p->rounds[currlevel] >= totalRounds){
+          cprintf("DEMOTION: Process %s (%d) has used up 8 rounds in current level ,moving down to next\n", p->name, p->pid);
 
           // reset number of rounds for that round, it could end up there again and start fresh
           p->rounds[currlevel] = 0;
@@ -392,6 +399,8 @@ scheduler(void)
 
 
       }
+      if (!emptylevel)
+        break;
     }
     release(&ptable.lock);
 
