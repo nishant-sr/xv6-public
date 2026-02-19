@@ -1,6 +1,9 @@
+enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+#include "pstat.h"
+
 struct stat;
 struct rtcdate;
-enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // system calls
 int fork(void);

@@ -59,3 +59,5 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+struct pstat;
+int getpinfo(struct pstat *ps);

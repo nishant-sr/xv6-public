@@ -100,6 +100,21 @@ sys_getreadcount(void){
 
 // needs to get the info for all processes and update processes to hold that info
 int 
-sys_getprocinfo(struct pstat *processes){
-  return 0;
+sys_getprocinfo(void){
+
+  struct pstat st;          // kernel-local buffer
+    struct pstat *uptr;       // user pointer
+
+    // fetch the user pointer from syscall arguments
+    if(argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
+        return -1;
+
+    // fill kernel struct
+    getpinfo(&st);
+
+    // copy to user space
+    if(copyout(myproc()->pgdir, (uint)uptr, (char*)&st, sizeof(st)) < 0)
+        return -1;
+
+    return 0;
 }

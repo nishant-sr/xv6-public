@@ -106,7 +106,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_getreadcount(void);
-extern int sys_getprocinfo(struct pstat *processes);
+extern int sys_getprocinfo(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,

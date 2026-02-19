@@ -364,7 +364,7 @@ scheduler(void)
         switchuvm(p);
 
         p->state = RUNNING;
-        cprintf("ID: %d | Process: %s | Level: %d | Rounds: %d\n", p->pid, p->name, p->priority, p->rounds[currlevel]);
+        // cprintf("ID: %d | Process: %s | Level: %d | Rounds: %d\n", p->pid, p->name, p->priority, p->rounds[currlevel]);
         
         swtch(&(c->scheduler), p->context);
         switchkvm();
@@ -372,6 +372,9 @@ scheduler(void)
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
+
+        if(p->state != RUNNABLE)
+          continue;
 
         // really this is just doing number of rounds
         // there should be a way to pass the process priority level in with it when being executed so that round sizes vary accordingly
@@ -381,22 +384,23 @@ scheduler(void)
 
         // if it's used up all 8 rounds for a given round
         if(p->rounds[currlevel] >= totalRounds){
-          cprintf("DEMOTION: Process %s (%d) has used up 8 rounds in current level ,moving down to next\n", p->name, p->pid);
+          // cprintf("DEMOTION: Process %s (%d) has used up 8 rounds in current level ,moving down to next\n", p->name, p->pid);
 
           // reset number of rounds for that round, it could end up there again and start fresh
           p->rounds[currlevel] = 0;
 
           // if lowest priority, move up
-          if (currlevel==0)
+          if (currlevel>0)
           {
-            p->priority += 1;
-          }
-          // otherwise move down 1
-          else{
             p->priority -= 1;
           }
+          // otherwise move down 1
+          // else{
+          //   p->priority -= 1;
+          // }
         }
 
+        break;
 
       }
       if (!emptylevel)
@@ -572,6 +576,8 @@ procdump(void)
   char *state;
   uint pc[10];
 
+  acquire(&ptable.lock);
+
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       continue;
@@ -587,6 +593,8 @@ procdump(void)
     }
     cprintf("\n");
   }
+
+  release(&ptable.lock);
 }
 
 void
@@ -623,4 +631,26 @@ mlfqdump(void){
     }
     cprintf("\n");
   }
+}
+
+
+int getpinfo(struct pstat *ps){
+  acquire(&ptable.lock);
+  struct proc *p;
+  int i = 0;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    ps->pid[i] = p->pid;
+    ps->inuse[i] = 1;
+    ps->pid[i] = p->pid;
+    ps->priority[i] = p->priority;
+    ps->state[i] = p->state;
+
+    for (int j = 0; j < 4; j++){
+      ps->ticks[i][j] = p->ticks[j];
+    }
+    i++;
+  }
+  
+  release(&ptable.lock);
+  return 0;
 }
