@@ -118,7 +118,10 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
   p->priority = 3;
-
+  for (int i = 0; i<4;i++){
+    p->rounds[i] = 0;
+    p->ticks[i] = 0;
+  }
   return p;
 }
 
@@ -187,7 +190,6 @@ growproc(int n)
 int
 fork(void)
 {
-  cprintf("fork called\n");
   int i, pid;
   struct proc *np;
   struct proc *curproc = myproc();
@@ -225,6 +227,7 @@ fork(void)
   np->state = RUNNABLE;
 
   release(&ptable.lock);
+  cprintf("fork called:%d\n", pid);
 
   return pid;
 }
@@ -340,50 +343,22 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-
     // how do we ensure we stay on the highest level til there aren't any; which means coming back to 3 even at the end sometimes
     // how to maintain round-robin at highest priority level?
     for(int level = 3; level >= 0; level--){
       // level is empty until proven otherwise
       int emptylevel = 1;
-
       for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+
         int currlevel = p->priority;
         if(p->state != RUNNABLE)
           continue;
         
-        if(p->priority!=level)
+        if(currlevel!=level)
           continue;
-
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        emptylevel = 0;
-
-        c->proc = p;
-        switchuvm(p);
-
-        p->state = RUNNING;
-        // cprintf("ID: %d | Process: %s | Level: %d | Rounds: %d\n", p->pid, p->name, p->priority, p->rounds[currlevel]);
         
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-
-        if(p->state != RUNNABLE)
-          continue;
-
-        // really this is just doing number of rounds
-        // there should be a way to pass the process priority level in with it when being executed so that round sizes vary accordingly
-        // here we can just compare against total number of rounds per level which is just 8 for all; only difference is duration of rounds in each level
-        p->rounds[currlevel] += 1;
-        p->ticks[currlevel] += LEVEL_TICKS[currlevel];
-
         // if it's used up all 8 rounds for a given round
-        if(p->rounds[currlevel] >= totalRounds){
+        if(p->rounds[currlevel] == totalRounds){
           // cprintf("DEMOTION: Process %s (%d) has used up 8 rounds in current level ,moving down to next\n", p->name, p->pid);
 
           // reset number of rounds for that round, it could end up there again and start fresh
@@ -394,25 +369,38 @@ scheduler(void)
           {
             p->priority -= 1;
           }
-          // otherwise move down 1
-          // else{
-          //   p->priority -= 1;
-          // }
+
+          continue;
         }
 
-        break;
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        emptylevel = 0;
 
+        c->proc = p;
+        switchuvm(p);
+
+        p->state = RUNNING;
+        // cprintf("RUNNING - ID: %d , LVL: %d\n", p->pid, p->priority);
+        
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+
+        
+        p->rounds[currlevel] += 1;
+        p->ticks[currlevel] += LEVEL_TICKS[currlevel];
       }
+      // if it was empty, we'd just keep going, but if it's not empty, we gotta keep running that level
       if (!emptylevel)
         break;
     }
     release(&ptable.lock);
-
   }
-
-
-  // last non-empty level is where we should be running from and do round-robin on there
-  // OR can we just iterate through all of it so we know it's a manual process
 }
 
 // Enter scheduler.  Must hold only ptable.lock
@@ -585,7 +573,7 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s", p->pid, state, p->name);
+    cprintf("%d %s %s %d", p->pid, state, p->name, p->priority);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
       for(i=0; i<10 && pc[i] != 0; i++)
@@ -640,7 +628,7 @@ int getpinfo(struct pstat *ps){
   int i = 0;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     ps->pid[i] = p->pid;
-    ps->inuse[i] = 1;
+    ps->inuse[i] = p->state == UNUSED ? 0 : 1;
     ps->pid[i] = p->pid;
     ps->priority[i] = p->priority;
     ps->state[i] = p->state;
