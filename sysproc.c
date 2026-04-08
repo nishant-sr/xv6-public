@@ -96,3 +96,7 @@ int
 sys_getreadcount(void){
   return readcount;
 }
+
+int sys_wmap(void){
+  
+}

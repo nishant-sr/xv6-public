@@ -78,6 +78,13 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
 
+  // case T_PGFLT: // T_PGFLT = 14
+  //   if page fault addr is part of a mapping: // lazy allocation
+  //       // handle it
+  //   else:
+  //       cprintf("Segmentation Fault\n");
+  //       // kill the process
+
   //PAGEBREAK: 13
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){
