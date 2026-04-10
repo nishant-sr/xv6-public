@@ -78,12 +78,19 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
 
-  // case T_PGFLT: // T_PGFLT = 14
-  //   if page fault addr is part of a mapping: // lazy allocation
-  //       // handle it
-  //   else:
-  //       cprintf("Segmentation Fault\n");
-  //       // kill the process
+  case T_PGFLT: // T_PGFLT = 14
+      // if address registered in the process
+    if (registeredwmap(rcr2()) == 0){
+      updatepagetable(rcr2());
+    } 
+    
+    else{
+        cprintf("Segmentation Fault\n");
+        myproc()->killed = 1;
+    }
+
+    lapiceoi();
+    break;
 
   //PAGEBREAK: 13
   default:
