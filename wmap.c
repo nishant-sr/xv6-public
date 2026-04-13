@@ -61,6 +61,36 @@ uint wmap(uint addr, int length, int flags, int fd){
     return addr;
 }
 
+int wunmap(uint addr){
+    struct proc *p = myproc();
+
+    for(int i = 0; i < p->total_mmaps;i++){
+        uint start = p->addr[i];
+        uint end = start + p->length[i];
+        
+        // requested slot and size is not fully available
+        if (addr == start){
+            
+            for(int j = 0; j < p->n_loaded_pages[i];j++){
+                uint newaddr = addr + PAGE_INCREMENT * j;
+                pte_t *pte = walkpgdir(p->pgdir, newaddr, 0);
+                uint physical_address = PTE_ADDR(*pte);
+                kfree(P2V(physical_address));
+                *pte = 0;
+            }
+            
+            p->addr[i] = 0;
+            p->length[i] = 0;
+            p->total_mmaps--;
+            p->n_loaded_pages[i] = 0;
+
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 uint registeredwmap(uint address){
     struct proc *p = myproc();
 
