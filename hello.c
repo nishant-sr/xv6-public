@@ -4,6 +4,15 @@
 int
 main(int argc, char *argv[])
 {
-  printf(1,"%d\n",getreadcount());
+  int i, x;
+
+  if(argc != 2){
+    exit();
+  }
+
+  for(i=0;i<atoi(argv[1]); i++){
+    x += i;
+  }
   exit();
+  return 0;
 }

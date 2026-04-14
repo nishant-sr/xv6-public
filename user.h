@@ -1,3 +1,7 @@
+enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+#include "pstat.h"
+
 struct stat;
 struct rtcdate;
 
@@ -24,6 +28,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int getreadcount(void);
+int getprocinfo(struct pstat *processes);
 
 // ulib.c
 int stat(const char*, struct stat*);
