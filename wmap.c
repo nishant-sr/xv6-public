@@ -5,10 +5,6 @@
 #define PAGE_INCREMENT 0x1000
 #define PAGE_SIZE 4096
 
-uint wmap(uint addr, int length, int flags, int fd);
-int wunmap(uint addr);
-uint wremap(uint oldaddr, int oldsize, int newsize, int flags);
-
 // uint, int, int, int => uint
 // virtual address for mapping, length of mapping in bytes
 // length > 0 , flags can be ORed together
@@ -110,5 +106,27 @@ int updatepagetable(uint address){
     char *mem = kalloc();
     mappages(p->pgdir, address, PAGE_SIZE, V2P(mem), PTE_W | PTE_U);
 
+    return 0;
+}
+
+// iterate page directory and record pa and va of all memory maps
+int getwmapinfo(struct wmapinfo *wminfo){
+    struct proc *p = myproc();
+    pde_t *pde = p->pgdir;
+    pte_t *pgtab;
+    for(int i = 0; i<MAX_UPAGE_INFO;i++){
+        cprintf("%d",&pde[i]);
+        pde++;
+    }
+    return 0;
+}
+
+int getpgdirinfo(struct pgdirinfo *pdinfo){
+    struct proc *p = myproc();
+    for(int i = 0; i <p->total_mmaps;i++){
+        pdinfo->n_upages += p->n_loaded_pages[i];
+        pdinfo->va[i] = p->addr[i];
+        pdinfo->pa[i] = walkpgdir(p->pgdir, p->addr[i]);
+    }
     return 0;
 }

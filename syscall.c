@@ -107,6 +107,10 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_getreadcount(void);
 extern int sys_wmap(void);
+extern int sys_wunmap(void);
+extern int sys_wremap(void);
+extern int sys_getwmapinfo(void);
+extern int sys_getpgdirinfo(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -132,6 +136,10 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_getreadcount] sys_getreadcount,
 [SYS_wmap] sys_wmap,
+[SYS_wunmap] sys_wunmap,
+[SYS_wremap] sys_wremap,
+[SYS_getwmapinfo] sys_getwmapinfo,
+[SYS_getpgdirinfo] sys_getpgdirinfo,
 };
 
 void

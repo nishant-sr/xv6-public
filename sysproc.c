@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "wmap.h"
 
 extern int readcount;
 
@@ -98,5 +99,21 @@ sys_getreadcount(void){
 }
 
 int sys_wmap(void){
-  
+  wmap()
+}
+
+int sys_wunmap(void){
+
+}
+
+int sys_wremap(void){
+
+}
+
+int sys_getwmapinfo(void){
+
+}
+
+int sys_getpgdirinfo(void){
+
 }
