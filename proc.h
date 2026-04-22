@@ -1,4 +1,5 @@
-#include "wmap.h"
+
+#define MAX_WMMAP_INFO 16
 
 // Per-CPU state
 struct cpu {
@@ -56,7 +57,6 @@ struct proc {
   int addr[MAX_WMMAP_INFO];           // Starting address of mapping
   int length[MAX_WMMAP_INFO];         // Size of mapping
   int n_loaded_pages[MAX_WMMAP_INFO]; // Number of pages physically loaded into memory
-
 };
 
 // Process memory is laid out contiguously, low addresses first:

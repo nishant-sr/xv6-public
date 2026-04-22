@@ -99,21 +99,38 @@ sys_getreadcount(void){
 }
 
 int sys_wmap(void){
-  wmap()
+  uint addr;
+  int length;
+  int flags;
+  int fd;
+
+  if((argint(1, &length) < 0) || (argint(2, &flags) < 0) || (argint(3, &fd) < 0))
+    return -1;
+  
+  return wmap(addr,length,flags,fd);
 }
 
 int sys_wunmap(void){
-
+  return 0;
 }
 
 int sys_wremap(void){
-
+  return 0;
 }
 
 int sys_getwmapinfo(void){
+  // struct wmapinfo *wminfo
+  struct wmapinfo *wminfo;
+  struct wmapinfo *uptr;
 
+  if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
+    return -1;
+  
+  getwmapinfo(wminfo);
+
+  return 0;
 }
 
 int sys_getpgdirinfo(void){
-
+  return 0;
 }

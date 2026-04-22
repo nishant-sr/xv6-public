@@ -1,7 +1,11 @@
 #include "types.h"
-#include "wmap.h"
-#include "proc.h"
+#include "defs.h"
+#include "param.h"
+#include "memlayout.h"
 #include "mmu.h"
+#include "x86.h"
+#include "proc.h"
+#include "wmap.h"
 #define PAGE_INCREMENT 0x1000
 #define PAGE_SIZE 4096
 
@@ -11,7 +15,7 @@
 uint wmap(uint addr, int length, int flags, int fd){
 
     if (length < 0){
-        exit(1);
+        exit();
     }
 
     //if we have 1 byte, how many pages is that?
@@ -24,14 +28,14 @@ uint wmap(uint addr, int length, int flags, int fd){
 
     // insufficient memory
     if (p->total_mmaps == MAX_WMMAP_INFO){
-        printf("full of memory for this process");
-        exit(1);
+        cprintf("full of memory for this process");
+        exit();
     }
 
     // address validity
     if (addr > 0x80000000 || addr < 0x60000000){
-        printf("invalid addr, not in range");
-        exit(1);
+        cprintf("invalid addr, not in range");
+        exit();
     }
 
     uint newend = addr + length;
@@ -43,7 +47,7 @@ uint wmap(uint addr, int length, int flags, int fd){
         
         // requested slot and size is not fully available
         if (!(end <= addr) || !(start >= newend)){
-            exit(1);
+            exit();
         }
     }
 
@@ -69,7 +73,7 @@ int wunmap(uint addr){
             
             for(int j = 0; j < p->n_loaded_pages[i];j++){
                 uint newaddr = addr + PAGE_INCREMENT * j;
-                pte_t *pte = walkpgdir(p->pgdir, newaddr, 0);
+                pte_t *pte = walkpgdir(p->pgdir, (void*)newaddr, 0);
                 uint physical_address = PTE_ADDR(*pte);
                 kfree(P2V(physical_address));
                 *pte = 0;
@@ -126,7 +130,7 @@ int getpgdirinfo(struct pgdirinfo *pdinfo){
     for(int i = 0; i <p->total_mmaps;i++){
         pdinfo->n_upages += p->n_loaded_pages[i];
         pdinfo->va[i] = p->addr[i];
-        pdinfo->pa[i] = walkpgdir(p->pgdir, p->addr[i]);
+        pdinfo->pa[i] = (uint) walkpgdir(p->pgdir, (void*)p->addr[i],PAGE_SIZE);
     }
     return 0;
 }

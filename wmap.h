@@ -16,13 +16,6 @@
 // for `getpgdirinfo`
 #define MAX_UPAGE_INFO 32
 
-int getwmapinfo(struct wmapinfo *wminfo);
-int getpgdirinfo(struct pgdirinfo *pdinfo);
-uint wmap(uint addr, int length, int flags, int fd);
-int wunmap(uint addr);
-uint wremap(uint oldaddr, int oldsize, int newsize, int flags);
-
-
 struct pgdirinfo {
     uint n_upages;           // the number of allocated physical pages in the process's user address space
     uint va[MAX_UPAGE_INFO]; // the virtual addresses of the allocated physical pages in the process's user address space
@@ -37,3 +30,11 @@ struct wmapinfo {
     int length[MAX_WMMAP_INFO];         // Size of mapping
     int n_loaded_pages[MAX_WMMAP_INFO]; // Number of pages physically loaded into memory
 };
+
+int getwmapinfo(struct wmapinfo *wminfo);
+int getpgdirinfo(struct pgdirinfo *pdinfo);
+uint wmap(uint addr, int length, int flags, int fd);
+int wunmap(uint addr);
+uint wremap(uint oldaddr, int oldsize, int newsize, int flags);
+int updatepagetable(uint address);
+uint registeredwmap(uint address);
