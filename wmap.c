@@ -88,6 +88,7 @@ int wunmap(uint addr){
         }
     }
 
+    // couldn't find the slot
     return -1;
 }
 
@@ -118,9 +119,20 @@ int getwmapinfo(struct wmapinfo *wminfo){
     struct proc *p = myproc();
     pde_t *pde = p->pgdir;
     pte_t *pgtab;
-    for(int i = 0; i<MAX_UPAGE_INFO;i++){
-        cprintf("%d",&pde[i]);
-        pde++;
+    for(int i = 0; i<NPDENTRIES;i++){
+        
+        if(pde[i] & PTE_P){
+
+            for(int j = 0; j < NPTENTRIES; j++){
+
+                if((pgtab[i] & PTE_P) && (pgtab[i] & PTE_U)){
+                    wminfo->total_mmaps += 1;
+                }
+                
+            }
+
+        }
+
     }
     return 0;
 }
