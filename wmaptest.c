@@ -27,10 +27,12 @@ void readpgdirinf(struct pgdirinfo *pd, int totalmaps){
 }
 
 int main(){
-    
     test_getwmap1();
     test_getpgdirinfo1();
 
+    // takes care of segmentation fault
+    exit();
+    return 0;
 }
 
 // successful mapping
@@ -40,14 +42,16 @@ int test_pgd1(){
 
 // test for getwmapinfo
 int test_getwmap1(){
-
+    // how to test for more or less ptes?
     struct wmapinfo *wm;
-    return getwmapinfo(wm);
+    getwmapinfo(wm);
+    return 0;
 
 }
 
 // test for getpgdirinfo
 int test_getpgdirinfo1(){
     struct pgdirinfo *pd;
-    return getpgdirinfo(pd);
+    getpgdirinfo(pd);
+    return 0;
 }

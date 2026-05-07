@@ -120,17 +120,23 @@ int sys_wremap(void){
 
 int sys_getwmapinfo(void){
   // struct wmapinfo *wminfo
-  struct wmapinfo *wminfo;
   struct wmapinfo *uptr;
 
   if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
     return -1;
   
-  getwmapinfo(wminfo);
+  getwmapinfo(uptr);
 
   return 0;
 }
 
 int sys_getpgdirinfo(void){
+  struct pgdirinfo *uptr;
+
+  if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
+    return -1;
+  
+  getpgdirinfo(uptr);
+
   return 0;
 }

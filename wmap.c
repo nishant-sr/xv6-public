@@ -115,34 +115,53 @@ int updatepagetable(uint address){
 }
 
 // iterate page directory and record pa and va of all memory maps
-int getwmapinfo(struct wmapinfo *wminfo){
+int getpgdirinfo(struct pgdirinfo *pd){
+    cprintf("starting getpgdirinfo \n");
     struct proc *p = myproc();
     pde_t *pde = p->pgdir;
-    pte_t *pgtab;
+    pte_t *pte;
+
+    cprintf("PAGE DIRECTORY ADDRESS: %x\n", pde);
+
+    
+
+    int validpages = 0;
+
     for(int i = 0; i<NPDENTRIES;i++){
-        
+        // cprintf("PDE: %x\n", pde[i]);
         if(pde[i] & PTE_P){
+            cprintf("PDE Physical Address: %x\n", pde[i]);
+            // translation using the pde[i] ?
+            // we need PTE to be pointing to the first PTE of the table/pde
+
+            // PDE holds physical addresses, so convert to VA of PTE[0]
+            pte = (pte_t*)P2V(PTE_ADDR(pde[i]));
 
             for(int j = 0; j < NPTENTRIES; j++){
-
-                if((pgtab[i] & PTE_P) && (pgtab[i] & PTE_U)){
-                    wminfo->total_mmaps += 1;
+                if((pte[j] & PTE_P) && (pte[j] & PTE_U)){
+                    cprintf("PTE Virtual Address: %x\n", pte[j]);
+                    cprintf("PTE Physical Address: %x\n",V2P(pte[j]));
+                    validpages += 1;
                 }
-                
             }
 
         }
 
     }
+
+    pd->n_upages = validpages;
+    cprintf("total valid pages: %d\n", validpages);
     return 0;
 }
 
-int getpgdirinfo(struct pgdirinfo *pdinfo){
+int getwmapinfo(struct wmapinfo *wminfo){
     struct proc *p = myproc();
     for(int i = 0; i <p->total_mmaps;i++){
-        pdinfo->n_upages += p->n_loaded_pages[i];
-        pdinfo->va[i] = p->addr[i];
-        pdinfo->pa[i] = (uint) walkpgdir(p->pgdir, (void*)p->addr[i],PAGE_SIZE);
+        wminfo->addr[i] += p->addr[i];
+        wminfo->length[i] += p->length[i];
+        wminfo->n_loaded_pages[i] += p->n_loaded_pages[i];
     }
+    wminfo->total_mmaps = p->total_mmaps;
+
     return 0;
 }

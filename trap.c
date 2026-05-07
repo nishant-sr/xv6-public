@@ -87,6 +87,8 @@ trap(struct trapframe *tf)
     
     else{
         cprintf("Segmentation Fault\n");
+        uint attempt = rcr2();
+        cprintf("%x\n", attempt);
         myproc()->killed = 1;
     }
 
