@@ -14,11 +14,21 @@
 // length > 0 , flags can be ORed together
 uint wmap(uint addr, int length, int flags, int fd){
 
-    if (length < 0){
-        exit();
+    if ((length <= 0) || !(flags & MAP_FIXED)){
+        return -1;
     }
 
+    if (flags & MAP_ANONYMOUS){
+        // ignores FD regardless of MAP PRIVATE or not
+        fd = -1;
+    }
+    // file-backed
+    else if (flags & MAP_PRIVATE){
     //if we have 1 byte, how many pages is that?
+        cprintf("Private Mapping\n");
+    }
+
+
     int pages = length / PGSIZE;
     if ((length % PGSIZE) > 0){
         pages += 1;
@@ -28,14 +38,19 @@ uint wmap(uint addr, int length, int flags, int fd){
 
     // insufficient memory
     if (p->total_mmaps == MAX_WMMAP_INFO){
-        cprintf("full of memory for this process");
-        exit();
+        cprintf("full of memory for this process\n");
+        return -1;
     }
 
     // address validity
     if (addr > 0x80000000 || addr < 0x60000000){
-        cprintf("invalid addr, not in range");
-        exit();
+        cprintf("invalid addr, not in range\n");
+        return -1;
+    }
+
+    if((addr % PAGE_SIZE) !=0){
+        cprintf("Not page aligned\n");
+        return -1;
     }
 
     uint newend = addr + length;
@@ -46,8 +61,9 @@ uint wmap(uint addr, int length, int flags, int fd){
         uint end = start + p->length[i];
         
         // requested slot and size is not fully available
-        if (!(end <= addr) || !(start >= newend)){
-            exit();
+        if (((start<=addr)&&(addr<=end)) || ((start<=newend)&&(newend<=end))){
+            cprintf("Invalid area, [%x : %x] ;  -- %x : %x\n", start, end, addr, newend);
+            return -1;
         }
     }
 
@@ -66,7 +82,7 @@ int wunmap(uint addr){
 
     for(int i = 0; i < p->total_mmaps;i++){
         uint start = p->addr[i];
-        uint end = start + p->length[i];
+        // uint end = start + p->length[i];
         
         // requested slot and size is not fully available
         if (addr == start){
@@ -101,6 +117,8 @@ uint registeredwmap(uint address){
         }
     }
 
+    cprintf("not registered\n");
+
     return -1;
 
 }
@@ -109,19 +127,19 @@ int updatepagetable(uint address){
     struct proc *p = myproc();
 
     char *mem = kalloc();
-    mappages(p->pgdir, address, PAGE_SIZE, V2P(mem), PTE_W | PTE_U);
+    mappages(p->pgdir, (void*)address, PAGE_SIZE, V2P(mem), PTE_W | PTE_U);
 
     return 0;
 }
 
 // iterate page directory and record pa and va of all memory maps
 int getpgdirinfo(struct pgdirinfo *pd){
-    cprintf("starting getpgdirinfo \n");
     struct proc *p = myproc();
     pde_t *pde = p->pgdir;
     pte_t *pte;
 
-    cprintf("PAGE DIRECTORY ADDRESS: %x\n", pde);
+    // cprintf("Process:%s\n",p->name);
+    // cprintf("PAGE DIRECTORY ADDRESS: %x\n", pde);
 
     
 
@@ -130,7 +148,9 @@ int getpgdirinfo(struct pgdirinfo *pd){
     for(int i = 0; i<NPDENTRIES;i++){
         // cprintf("PDE: %x\n", pde[i]);
         if(pde[i] & PTE_P){
-            cprintf("PDE Physical Address: %x\n", pde[i]);
+            
+            // cprintf("PDE Physical Address: %x\n", pde[i]);
+
             // translation using the pde[i] ?
             // we need PTE to be pointing to the first PTE of the table/pde
 
@@ -139,8 +159,8 @@ int getpgdirinfo(struct pgdirinfo *pd){
 
             for(int j = 0; j < NPTENTRIES; j++){
                 if((pte[j] & PTE_P) && (pte[j] & PTE_U)){
-                    cprintf("PTE Virtual Address: %x\n", pte[j]);
-                    cprintf("PTE Physical Address: %x\n",V2P(pte[j]));
+                    // cprintf("\tPTE Virtual Address: %x\n", pte[j]);
+                    // cprintf("\tPTE Physical Address: %x\n",V2P(pte[j]));
                     validpages += 1;
                 }
             }
@@ -150,17 +170,19 @@ int getpgdirinfo(struct pgdirinfo *pd){
     }
 
     pd->n_upages = validpages;
-    cprintf("total valid pages: %d\n", validpages);
     return 0;
 }
 
 int getwmapinfo(struct wmapinfo *wminfo){
     struct proc *p = myproc();
+
     for(int i = 0; i <p->total_mmaps;i++){
-        wminfo->addr[i] += p->addr[i];
-        wminfo->length[i] += p->length[i];
-        wminfo->n_loaded_pages[i] += p->n_loaded_pages[i];
+        wminfo->addr[i] = p->addr[i];
+        wminfo->length[i] = p->length[i];
+        wminfo->n_loaded_pages[i] = p->n_loaded_pages[i];
     }
+    
+    cprintf("inside getwmapinfo\n");
     wminfo->total_mmaps = p->total_mmaps;
 
     return 0;

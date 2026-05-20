@@ -104,14 +104,18 @@ int sys_wmap(void){
   int flags;
   int fd;
 
-  if((argint(1, &length) < 0) || (argint(2, &flags) < 0) || (argint(3, &fd) < 0))
+  if((argint(0, &addr) < 0) || (argint(1, &length) < 0) || (argint(2, &flags) < 0) || (argint(3, &fd) < 0))
     return -1;
   
   return wmap(addr,length,flags,fd);
 }
 
 int sys_wunmap(void){
-  return 0;
+  uint addr;
+  if(argint(0, &addr) < 0){
+    return -1;
+  }
+  return wunmap(addr);
 }
 
 int sys_wremap(void){
@@ -125,6 +129,7 @@ int sys_getwmapinfo(void){
   if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
     return -1;
   
+  cprintf("getwmap INVOKED; %x\n");
   getwmapinfo(uptr);
 
   return 0;

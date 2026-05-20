@@ -112,6 +112,15 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  cprintf("proc allocing\n");
+
+  p->total_mmaps = 0;
+  for(int i = 0; i <MAX_WMMAP_INFO ;i++){
+    p->addr[i] = 0;
+    p->length[i] = 0;
+    p->n_loaded_pages[i] = 0;
+  }
+
   return p;
 }
 
