@@ -60,53 +60,58 @@ int test_pgd1(){
 // addr > 0x80000000 || addr < 0x60000000
 // test for getwmapinfo
 int test_getwmap1(){
-    struct wmapinfo *wm;
+    struct wmapinfo *wm = malloc(sizeof(struct wmapinfo));
     int numpages = 1;
     int extra = 250;
+
+    // printf(1,"wm address: %x\n", &wm);
 
     wmap(0x60011000, PAGE_SIZE * numpages + extra, MAP_ANONYMOUS | MAP_FIXED | MAP_SHARED, -1);
     wmap(0x60012000, 20, MAP_ANONYMOUS | MAP_FIXED | MAP_SHARED, -1);
 
-    getwmapinfo(&wm);
+    getwmapinfo(wm);
 
     for(int i = 0; i< wm->total_mmaps; i++){
         printf(1,"Address: %x\t",wm->addr[i]);
         printf(1,"Length: %d\t",wm->length[i]);
         printf(1,"Pages: %d\n",wm->n_loaded_pages[i]);
     }
+
+    wunmap(0x60011000);
+    free(wm);
 
     return 0;
 
 }
 
 int test_getwmap2(){
-    struct wmapinfo *wm;
+    struct wmapinfo *wm = malloc(sizeof(struct wmapinfo));
     int numpages = 2;
     int extra = 250;
     int fd = open("wmapfile.txt", O_RDWR);
     printf(1,"fd: %d\n",fd);
     
     wmap(0x70044000, PAGE_SIZE * numpages + extra, MAP_ANONYMOUS | MAP_FIXED | MAP_SHARED, -1);
-    getwmapinfo(&wm);
+    getwmapinfo(wm);
 
     for(int i = 0; i< wm->total_mmaps; i++){
         printf(1,"Address: %x\t",wm->addr[i]);
         printf(1,"Length: %d\t",wm->length[i]);
         printf(1,"Pages: %d\n",wm->n_loaded_pages[i]);
     }
-
-    printf(1,"testing testing\n");
-
+    
+    free(wm);
     return 0;
 }
 
 // pgdirinfo tests
 int test_getpgdirinfo1(){
-    struct pgdirinfo *pd;
+    struct pgdirinfo *pd = malloc(sizeof(struct pgdirinfo));
     int numslots = 1;
     getpgdirinfo(pd);
     printf(1,"# of Allocated Pages: %d\n", pd->n_upages);
 
+    free(pd);
     return 0;
 }
 
@@ -117,8 +122,9 @@ int test_getpgdirinfo1(){
 // below is for when we do sizeof int
 // every 10,000 gives us 10 pages, but not every 1000 gives us 1 page
 int test_getpgdirinfo2(){
-    struct pgdirinfo *pd;
-    int numslots = 40000;
+    struct pgdirinfo *pd = malloc(sizeof(struct pgdirinfo));
+    int numpages = 3;
+    int numslots = PAGE_SIZE * numpages;
     int *ptr = malloc(numslots * sizeof(int));
     if(ptr == 0){
         return 1;
@@ -128,12 +134,14 @@ int test_getpgdirinfo2(){
     }
     getpgdirinfo(pd);
     printf(1,"# of Allocated Pages: %d\n", pd->n_upages);
+    free(pd);
+    free(ptr);
     return 0;
 }
 
 // adding 1 page
 int test_getpgdirinfo3(){
-    struct pgdirinfo *pd;
+    struct pgdirinfo *pd = malloc(sizeof(struct pgdirinfo));
     int numpages = 3;
     int numslots = PAGE_SIZE * numpages;
     int *ptr = malloc(numslots * 1);
@@ -142,5 +150,7 @@ int test_getpgdirinfo3(){
     }
     getpgdirinfo(pd);
     printf(1,"# of Allocated Pages: %d\n", pd->n_upages);
+    free(pd);
+    free(ptr);
     return 0;
 }

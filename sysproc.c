@@ -126,10 +126,10 @@ int sys_getwmapinfo(void){
   // struct wmapinfo *wminfo
   struct wmapinfo *uptr;
 
-  if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
+  if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0){
     return -1;
+  }
   
-  cprintf("getwmap INVOKED; %x\n");
   getwmapinfo(uptr);
 
   return 0;

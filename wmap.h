@@ -37,4 +37,4 @@ uint wmap(uint addr, int length, int flags, int fd);
 int wunmap(uint addr);
 uint wremap(uint oldaddr, int oldsize, int newsize, int flags);
 int updatepagetable(uint address);
-uint registeredwmap(uint address);
+int registeredwmap(uint address);

@@ -88,11 +88,11 @@ int wunmap(uint addr){
         if (addr == start){
             
             for(int j = 0; j < p->n_loaded_pages[i];j++){
+
                 uint newaddr = addr + PAGE_INCREMENT * j;
                 pte_t *pte = walkpgdir(p->pgdir, (void*)newaddr, 0);
                 uint physical_address = PTE_ADDR(*pte);
                 kfree(P2V(physical_address));
-                *pte = 0;
             }
             
             p->addr[i] = 0;
@@ -108,11 +108,11 @@ int wunmap(uint addr){
     return -1;
 }
 
-uint registeredwmap(uint address){
+int registeredwmap(uint address){
     struct proc *p = myproc();
 
     for(int i = 0; i < p->total_mmaps; i++){
-        if(address >= p->addr[i] && address < p->addr[i] + p->length[i]){
+        if((address >= p->addr[i]) && (address < (p->addr[i] + p->length[i]))){
             return 0;
         }
     }
@@ -182,7 +182,6 @@ int getwmapinfo(struct wmapinfo *wminfo){
         wminfo->n_loaded_pages[i] = p->n_loaded_pages[i];
     }
     
-    cprintf("inside getwmapinfo\n");
     wminfo->total_mmaps = p->total_mmaps;
 
     return 0;

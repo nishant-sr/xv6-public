@@ -63,10 +63,12 @@ argptr(int n, char **pp, int size)
   int i;
   struct proc *curproc = myproc();
  
-  if(argint(n, &i) < 0)
+  if(argint(n, &i) < 0){
     return -1;
-  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
+  }
+  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz){
     return -1;
+  }
   *pp = (char*)i;
   return 0;
 }
