@@ -29,6 +29,7 @@ struct wmapinfo {
     int addr[MAX_WMMAP_INFO];           // Starting address of mapping
     int length[MAX_WMMAP_INFO];         // Size of mapping
     int n_loaded_pages[MAX_WMMAP_INFO]; // Number of pages physically loaded into memory
+    int filebacked[MAX_WMMAP_INFO];
 };
 
 int getwmapinfo(struct wmapinfo *wminfo);
@@ -36,5 +37,5 @@ int getpgdirinfo(struct pgdirinfo *pdinfo);
 uint wmap(uint addr, int length, int flags, int fd);
 int wunmap(uint addr);
 uint wremap(uint oldaddr, int oldsize, int newsize, int flags);
-int updatepagetable(uint address);
+int updatepagetable(uint address, int index);
 int registeredwmap(uint address);

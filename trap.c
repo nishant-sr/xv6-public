@@ -81,8 +81,10 @@ trap(struct trapframe *tf)
 
   case T_PGFLT: // T_PGFLT = 14
       // if address registered in the process
-    if (registeredwmap(rcr2()) == 0){
-      updatepagetable(rcr2());
+    int wmapindex = registeredwmap(rcr2());
+
+    if (wmapindex >= 0){
+      updatepagetable(rcr2(), wmapindex);
     } 
     
     else{

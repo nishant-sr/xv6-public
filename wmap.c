@@ -5,6 +5,11 @@
 #include "mmu.h"
 #include "x86.h"
 #include "proc.h"
+#include "fs.h"
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "file.h"
+#include "fcntl.h"
 #include "wmap.h"
 #define PAGE_INCREMENT 0x1000
 #define PAGE_SIZE 4096
@@ -21,11 +26,6 @@ uint wmap(uint addr, int length, int flags, int fd){
     if (flags & MAP_ANONYMOUS){
         // ignores FD regardless of MAP PRIVATE or not
         fd = -1;
-    }
-    // file-backed
-    else if (flags & MAP_PRIVATE){
-    //if we have 1 byte, how many pages is that?
-        cprintf("Private Mapping\n");
     }
 
 
@@ -72,6 +72,17 @@ uint wmap(uint addr, int length, int flags, int fd){
     p->addr[newmap] = addr;
     p->length[newmap] = length;
     p->n_loaded_pages[newmap] = pages;
+
+    // file-backed
+    if(fd != -1){
+        cprintf("file-backed mapping\n");
+        p->filebacked[newmap] = fd;
+
+        // shared
+
+        // private
+    }
+    
     p->total_mmaps++;
 
     return addr;
@@ -89,10 +100,15 @@ int wunmap(uint addr){
             
             for(int j = 0; j < p->n_loaded_pages[i];j++){
 
+
+
                 uint newaddr = addr + PAGE_INCREMENT * j;
                 pte_t *pte = walkpgdir(p->pgdir, (void*)newaddr, 0);
                 uint physical_address = PTE_ADDR(*pte);
-                kfree(P2V(physical_address));
+                if(pte && (*pte & PTE_P)){
+                    kfree(P2V(physical_address));
+                }
+                *pte = 0;
             }
             
             p->addr[i] = 0;
@@ -113,21 +129,33 @@ int registeredwmap(uint address){
 
     for(int i = 0; i < p->total_mmaps; i++){
         if((address >= p->addr[i]) && (address < (p->addr[i] + p->length[i]))){
-            return 0;
+            return i;
         }
     }
 
     cprintf("not registered\n");
-
     return -1;
 
 }
 
-int updatepagetable(uint address){
+int updatepagetable(uint address, int index){
     struct proc *p = myproc();
 
     char *mem = kalloc();
     mappages(p->pgdir, (void*)address, PAGE_SIZE, V2P(mem), PTE_W | PTE_U);
+
+    // if file-backed
+    if(p->filebacked[index] >= 3){
+        // readi(struct inode *ip, char *dst, uint off, uint n)
+        struct file *f = p->ofile[p->filebacked[index]];
+        struct inode *ip = f->ip;
+
+        // page-aligned
+        uint offset = (address - p->addr[index]) / PAGE_SIZE; 
+        cprintf("faulted add: %x , starting add: %x, offset: %x\n", address, p->addr[index], offset);
+        
+        int fileread = readi(ip,mem,offset,PAGE_SIZE);
+    }
 
     return 0;
 }
@@ -135,7 +163,7 @@ int updatepagetable(uint address){
 // iterate page directory and record pa and va of all memory maps
 int getpgdirinfo(struct pgdirinfo *pd){
     struct proc *p = myproc();
-    pde_t *pde = p->pgdir;
+    pde_t *pde = p->pgdir; //virtual address of pgdir
     pte_t *pte;
 
     // cprintf("Process:%s\n",p->name);
@@ -144,6 +172,7 @@ int getpgdirinfo(struct pgdirinfo *pd){
     
 
     int validpages = 0;
+    int firstpages = 0;
 
     for(int i = 0; i<NPDENTRIES;i++){
         // cprintf("PDE: %x\n", pde[i]);
@@ -155,18 +184,24 @@ int getpgdirinfo(struct pgdirinfo *pd){
             // we need PTE to be pointing to the first PTE of the table/pde
 
             // PDE holds physical addresses, so convert to VA of PTE[0]
-            pte = (pte_t*)P2V(PTE_ADDR(pde[i]));
+            // PPN | FLAGS -> extract PPN first and then P2V it
+            uint PPN = PTE_ADDR(pde[i]);
+            pte = (pte_t*)P2V(PPN); // kernel address of pte
 
             for(int j = 0; j < NPTENTRIES; j++){
                 if((pte[j] & PTE_P) && (pte[j] & PTE_U)){
                     // cprintf("\tPTE Virtual Address: %x\n", pte[j]);
                     // cprintf("\tPTE Physical Address: %x\n",V2P(pte[j]));
                     validpages += 1;
+
+                    if(firstpages < MAX_UPAGE_INFO){
+                        pd->va[firstpages] = PGADDR(i,j,0);
+                        pd->pa[firstpages] = (pte[j]);
+                        firstpages += 1;
+                    }
                 }
             }
-
         }
-
     }
 
     pd->n_upages = validpages;
@@ -180,6 +215,7 @@ int getwmapinfo(struct wmapinfo *wminfo){
         wminfo->addr[i] = p->addr[i];
         wminfo->length[i] = p->length[i];
         wminfo->n_loaded_pages[i] = p->n_loaded_pages[i];
+        wminfo->filebacked[i] = p->filebacked[i];
     }
     
     wminfo->total_mmaps = p->total_mmaps;

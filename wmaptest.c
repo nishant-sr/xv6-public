@@ -2,10 +2,6 @@
 #include "user.h"
 #include "fcntl.h"
 #include "param.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "x86.h"
-#include "proc.h"
 #include "wmap.h"
 #define PAGE_INCREMENT 0x1000
 #define PAGE_SIZE 4096
@@ -74,7 +70,8 @@ int test_getwmap1(){
     for(int i = 0; i< wm->total_mmaps; i++){
         printf(1,"Address: %x\t",wm->addr[i]);
         printf(1,"Length: %d\t",wm->length[i]);
-        printf(1,"Pages: %d\n",wm->n_loaded_pages[i]);
+        printf(1,"Pages: %d\t",wm->n_loaded_pages[i]);
+        printf(1,"File-backed: %d\n", wm->filebacked[i]);
     }
 
     wunmap(0x60011000);
@@ -88,19 +85,28 @@ int test_getwmap2(){
     struct wmapinfo *wm = malloc(sizeof(struct wmapinfo));
     int numpages = 2;
     int extra = 250;
-    int fd = open("wmapfile.txt", O_RDWR);
+    uint addr = 0x70044000;
+
+    int fd = open("wmapfile.txt", O_CREATE | O_RDWR);
     printf(1,"fd: %d\n",fd);
     
-    wmap(0x70044000, PAGE_SIZE * numpages + extra, MAP_ANONYMOUS | MAP_FIXED | MAP_SHARED, -1);
+    wmap(0x70044000, PAGE_SIZE * numpages + extra, MAP_FIXED | MAP_SHARED, fd);
     getwmapinfo(wm);
 
     for(int i = 0; i< wm->total_mmaps; i++){
         printf(1,"Address: %x\t",wm->addr[i]);
         printf(1,"Length: %d\t",wm->length[i]);
-        printf(1,"Pages: %d\n",wm->n_loaded_pages[i]);
+        printf(1,"Pages: %d\t",wm->n_loaded_pages[i]);
+        printf(1,"File-backed: %d\n", wm->filebacked[i]);
     }
+
+    char *ptr = (char*)addr;
+    printf(1,"Printing from memory location we made: %c\n",ptr[100]);
     
+    wunmap(0x70044000);
     free(wm);
+    close(fd);
+    fd = 0;
     return 0;
 }
 
@@ -110,6 +116,10 @@ int test_getpgdirinfo1(){
     int numslots = 1;
     getpgdirinfo(pd);
     printf(1,"# of Allocated Pages: %d\n", pd->n_upages);
+
+    for(int i = 0;i < MAX_UPAGE_INFO; i++){
+        printf(1,"%d. VA: %x PA: %x\n",i,pd->va[i],pd->pa[i]);
+    }
 
     free(pd);
     return 0;
@@ -123,17 +133,19 @@ int test_getpgdirinfo1(){
 // every 10,000 gives us 10 pages, but not every 1000 gives us 1 page
 int test_getpgdirinfo2(){
     struct pgdirinfo *pd = malloc(sizeof(struct pgdirinfo));
-    int numpages = 3;
+    int numpages = 100;
     int numslots = PAGE_SIZE * numpages;
-    int *ptr = malloc(numslots * sizeof(int));
+    int *ptr = malloc(numslots);
     if(ptr == 0){
         return 1;
     }
-    for(int i = 0; i<numslots;i++){
-        ptr[i] = i * 99;
-    }
     getpgdirinfo(pd);
     printf(1,"# of Allocated Pages: %d\n", pd->n_upages);
+
+    for(int i = 0;i < MAX_UPAGE_INFO; i++){
+        printf(1,"%d. VA: %x PA: %x\n",i,pd->va[i],pd->pa[i]);
+    }
+
     free(pd);
     free(ptr);
     return 0;
@@ -148,8 +160,14 @@ int test_getpgdirinfo3(){
     if(ptr == 0){
         return 1;
     }
+    
     getpgdirinfo(pd);
     printf(1,"# of Allocated Pages: %d\n", pd->n_upages);
+
+    for(int i = 0;i < MAX_UPAGE_INFO; i++){
+        printf(1,"%d. VA: %x PA: %x\n",i,pd->va[i],pd->pa[i]);
+    }
+
     free(pd);
     free(ptr);
     return 0;

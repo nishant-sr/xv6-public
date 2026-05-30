@@ -186,7 +186,7 @@ UPROGS=\
 	_wmaptest\
 
 fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+	./mkfs fs.img README wmapfile.txt $(UPROGS)
 
 -include *.d
 
