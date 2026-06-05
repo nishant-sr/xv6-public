@@ -6,6 +6,14 @@
 #define PAGE_INCREMENT 0x1000
 #define PAGE_SIZE 4096
 
+
+/* TODO:
+- wunmap: adjusted for file-backed mapping as well
+- wmap: 
+    - private
+    -shared
+- wremap
+*/
 int test_getwmap1();
 int test_getpgdirinfo1();
 
@@ -42,6 +50,8 @@ int main(){
     printf(1,"TEST 2 C\n\n");
     test_getpgdirinfo3();
     printf(1,"\n");
+
+    printf(1,"Tests Done\n");
 
     // takes care of segmentation fault
     exit();
@@ -101,7 +111,9 @@ int test_getwmap2(){
     }
 
     char *ptr = (char*)addr;
-    printf(1,"Printing from memory location we made: %c\n",ptr[100]);
+    printf(1,"Printing from memory location we made: %c\n",ptr[0]);
+
+    wunmap(addr);
     
     wunmap(0x70044000);
     free(wm);

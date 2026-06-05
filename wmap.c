@@ -15,7 +15,7 @@
 #define PAGE_SIZE 4096
 
 // uint, int, int, int => uint
-// virtual address for mapping, length of mapping in bytes
+// virtual address for mapping, length of mapping in bytes, flags, file directory
 // length > 0 , flags can be ORed together
 uint wmap(uint addr, int length, int flags, int fd){
 
@@ -27,7 +27,6 @@ uint wmap(uint addr, int length, int flags, int fd){
         // ignores FD regardless of MAP PRIVATE or not
         fd = -1;
     }
-
 
     int pages = length / PGSIZE;
     if ((length % PGSIZE) > 0){
@@ -48,6 +47,7 @@ uint wmap(uint addr, int length, int flags, int fd){
         return -1;
     }
 
+    // page alignment check
     if((addr % PAGE_SIZE) !=0){
         cprintf("Not page aligned\n");
         return -1;
@@ -79,8 +79,14 @@ uint wmap(uint addr, int length, int flags, int fd){
         p->filebacked[newmap] = fd;
 
         // shared
+        if(flags & MAP_SHARED){
 
+        }
         // private
+        else if (flags & MAP_PRIVATE){
+            
+        }
+        
     }
     
     p->total_mmaps++;
@@ -95,16 +101,28 @@ int wunmap(uint addr){
         uint start = p->addr[i];
         // uint end = start + p->length[i];
         
-        // requested slot and size is not fully available
         if (addr == start){
+            cprintf("hitting mapping\n");
             
             for(int j = 0; j < p->n_loaded_pages[i];j++){
-
-
-
                 uint newaddr = addr + PAGE_INCREMENT * j;
                 pte_t *pte = walkpgdir(p->pgdir, (void*)newaddr, 0);
                 uint physical_address = PTE_ADDR(*pte);
+
+                // file-backed
+                // need to write back from file-backed virtual mapping to the file and then clear the virtual mapping
+                if(p->filebacked[i] >= 3){
+                    // readi(struct inode *ip, char *dst, uint off, uint n)
+                    struct file *f = p->ofile[p->filebacked[i]];
+                    struct inode *ip = f->ip;
+
+                    // page-aligned
+                    uint offset = (addr - p->addr[i]) / PAGE_SIZE; 
+                    
+                    // read from memory address to file at the correct offset
+                    cprintf("physical address is: %x\n",physical_address);
+                }
+
                 if(pte && (*pte & PTE_P)){
                     kfree(P2V(physical_address));
                 }
@@ -153,6 +171,7 @@ int updatepagetable(uint address, int index){
         // page-aligned
         uint offset = (address - p->addr[index]) / PAGE_SIZE; 
         cprintf("faulted add: %x , starting add: %x, offset: %x\n", address, p->addr[index], offset);
+        cprintf("physical address: %x\n", V2P(mem));
         
         int fileread = readi(ip,mem,offset,PAGE_SIZE);
     }
