@@ -63,10 +63,12 @@ argptr(int n, char **pp, int size)
   int i;
   struct proc *curproc = myproc();
  
-  if(argint(n, &i) < 0)
+  if(argint(n, &i) < 0){
     return -1;
-  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
+  }
+  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz){
     return -1;
+  }
   *pp = (char*)i;
   return 0;
 }
@@ -106,6 +108,11 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_getreadcount(void);
+extern int sys_wmap(void);
+extern int sys_wunmap(void);
+extern int sys_wremap(void);
+extern int sys_getwmapinfo(void);
+extern int sys_getpgdirinfo(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -130,6 +137,11 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_getreadcount] sys_getreadcount,
+[SYS_wmap] sys_wmap,
+[SYS_wunmap] sys_wunmap,
+[SYS_wremap] sys_wremap,
+[SYS_getwmapinfo] sys_getwmapinfo,
+[SYS_getpgdirinfo] sys_getpgdirinfo,
 };
 
 void

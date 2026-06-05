@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "wmap.h"
 
 extern int readcount;
 
@@ -95,4 +96,52 @@ sys_uptime(void)
 int
 sys_getreadcount(void){
   return readcount;
+}
+
+int sys_wmap(void){
+  uint addr;
+  int length;
+  int flags;
+  int fd;
+
+  if((argint(0, &addr) < 0) || (argint(1, &length) < 0) || (argint(2, &flags) < 0) || (argint(3, &fd) < 0))
+    return -1;
+  
+  return wmap(addr,length,flags,fd);
+}
+
+int sys_wunmap(void){
+  uint addr;
+  if(argint(0, &addr) < 0){
+    return -1;
+  }
+  return wunmap(addr);
+}
+
+int sys_wremap(void){
+  return 0;
+}
+
+int sys_getwmapinfo(void){
+  // struct wmapinfo *wminfo
+  struct wmapinfo *uptr;
+
+  if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0){
+    return -1;
+  }
+  
+  getwmapinfo(uptr);
+
+  return 0;
+}
+
+int sys_getpgdirinfo(void){
+  struct pgdirinfo *uptr;
+
+  if (argptr(0, (void*)&uptr, sizeof(*uptr)) < 0)
+    return -1;
+  
+  getpgdirinfo(uptr);
+
+  return 0;
 }

@@ -21,3 +21,8 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_getreadcount 22
+#define SYS_wmap 23
+#define SYS_wunmap 24
+#define SYS_wremap 25
+#define SYS_getwmapinfo 26
+# define SYS_getpgdirinfo 27

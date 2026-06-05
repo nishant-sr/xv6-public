@@ -1,3 +1,6 @@
+
+#define MAX_WMMAP_INFO 16
+
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -49,6 +52,12 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  // --------------------------------------------------------------------------
+  int total_mmaps;                    // Total number of wmap regions
+  int addr[MAX_WMMAP_INFO];           // Starting address of mapping
+  int length[MAX_WMMAP_INFO];         // Size of mapping
+  int n_loaded_pages[MAX_WMMAP_INFO]; // Number of pages physically loaded into memory
+  int filebacked[MAX_WMMAP_INFO];     // list of fd's
 };
 
 // Process memory is laid out contiguously, low addresses first:
